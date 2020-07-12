@@ -28,7 +28,13 @@ class UserProfile(Base):
     user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
     user = relationship("User", back_populates="profile")
 
+    job = Column(String)
     address = Column(String)
+
+    def __repr__(self):
+        return "<UserProfile(user_id={}, job={}, address={})>".format(
+            self.user_id, self.job, self.address
+        )
 
 
 Base.metadata.create_all(engine)
@@ -42,14 +48,29 @@ fake = Faker()
 def create_user():
     user = User(name=fake.name())
     session.add(user)
-    user.profile = UserProfile(address=fake.address())
+    user.profile = UserProfile(job=fake.job(), address=fake.address())
     session.commit()
 
 
 # %%
-create_user()
+for _ in range(20):
+    create_user()
 
 # %%
-users = session.query(User)[2:5]
-print(users)
+users = session.query(User)[1:6]
+users
 
+# %%
+# https://docs.sqlalchemy.org/en/13/orm/tutorial.html#querying
+session.query(User, UserProfile).filter(User.id == UserProfile.user_id).filter(
+    UserProfile.address.like("%Green%")
+).all()
+
+# %%
+users = session.query(User).join(UserProfile).filter(UserProfile.job.like("%")).all()
+
+for user in users:
+    print(user.profile.job)
+
+
+# %%
