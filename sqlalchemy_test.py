@@ -57,7 +57,8 @@ for _ in range(20):
     create_user()
 
 # %%
-users = session.query(User)[1:6]
+# Order by and limit skip
+users = session.query(User).order_by(User.name)[1:6]
 users
 
 # %%
@@ -67,7 +68,33 @@ session.query(User, UserProfile).filter(User.id == UserProfile.user_id).filter(
 ).all()
 
 # %%
-users = session.query(User).join(UserProfile).filter(UserProfile.job.like("%")).all()
+from sqlalchemy.orm import joinedload
+
+# use options joinedload to eager load by doing a join
+users = (
+    session.query(User)
+    .options(joinedload(User.profile))
+    .join(UserProfile)
+    .filter(UserProfile.job.like("%"))
+    .all()
+)
+
+for user in users:
+    print(user.profile.job)
+
+
+# %%
+# https://docs.sqlalchemy.org/en/13/orm/tutorial.html#common-filter-operators
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
+
+users = (
+    session.query(User)
+    .options(joinedload(User.profile))
+    .join(UserProfile)
+    .filter(or_(UserProfile.job.like("%manager%"), UserProfile.job.like("%engineer%")))
+    .all()
+)
 
 for user in users:
     print(user.profile.job)
